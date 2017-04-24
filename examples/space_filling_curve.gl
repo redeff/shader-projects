@@ -1,0 +1,65 @@
+#version 130
+#define PIXELS 512
+
+in vec2 uv;
+out vec4 color;
+
+ivec2 poo;
+
+ivec2 itter(ivec2 pos, int size){
+  int place = (pos.x - pos.x % size) / size + 2 * ((pos.y - pos.y % size) / size);
+  if(place > 1){
+    return ivec2(pos.x % size, pos.y % size);
+  }
+  ivec2 outta;
+  outta = ivec2(pos.y % size, pos.x % size);
+  if(place == 0){
+    return outta;
+  }
+  return ivec2(size - 1) - ivec2(outta.x,outta.y);
+}
+
+vec3 hsb2rgb( in vec3 c ){
+    vec3 rgb = clamp(abs(mod(c.x*6.0+vec3(0.0,4.0,2.0),
+                             6.0)-3.0)-1.0,
+                     0.0,
+                     1.0 );
+    rgb = rgb*rgb*(3.0-2.0*rgb);
+    return c.z * mix(vec3(1.0), rgb, c.y);
+}
+
+float weird(float x, float a){
+  return 0.5 * tan(a * (x - 0.5)) / tan(0.5 * a) + 0.5;
+}
+
+void main(){
+
+  int map[4], fun[4];
+  map[0] = 0;
+  map[1] = 3;
+  map[2] = 1;
+  map[3] = 2;
+
+  int x, y;
+  x = int(gl_FragCoord.x);
+  //x = 0;
+  y = int(gl_FragCoord.y);
+  //y = 0;
+  int size = PIXELS;
+  int line = 0;
+  ivec2 pos = ivec2(x, y);
+
+
+
+  while(size > 1){
+    size /= 2;
+
+    line += size * size * map[(pos.x - pos.x % size) / size + 2 * ((pos.y - pos.y % size) / size)];
+    pos = itter(pos, size);
+  }
+
+  float ratio = line / float(PIXELS * PIXELS);
+
+  color = vec4(hsb2rgb(vec3(weird(ratio, 2) / 2 + 3/6.0f, 1.0f, weird(ratio, 1))), 0.0f);
+  //color = vec4(1.0f, 1.0f, 1.0f, 0.0f);
+}

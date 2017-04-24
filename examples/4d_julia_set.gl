@@ -1,0 +1,73 @@
+#version 130
+
+#define STEP 0.001f
+#define BOUND 4.0f
+#define START 2.0f
+#define TIMES 100
+#define DEL 1e-4
+
+#define PLANE vec3(0.0f, 0.0f, 0.0f)
+#define R 0.0f
+
+#define LIGHT vec3(-2.0f, 1.0f, 1.0f);
+
+in vec2 uv;
+out vec3 color;
+
+
+
+vec4 sq(vec4 q){
+  return vec4(q.x * q.x - q.y * q.y - q.z * q.z - q.w * q.w,
+              2 * q.x * q.y,
+              2 * q.x * q.z,
+              2 * q.x * q.w);
+}
+
+vec4 c = vec4(-0.213,-0.0410,-0.563,-0.560);
+
+bool test(vec3 p, int maxSteps){
+  vec4 w = vec4(PLANE * p, R);
+  vec4 qp = vec4(p, w.x + w.y + w.z + w.w);
+
+  int t = 0;
+  while(t < maxSteps && length(qp) < BOUND){
+    qp = sq(qp) + c;
+    t++;
+  }
+
+  return length(qp) < BOUND;
+}
+
+bool find(inout vec3 origin, vec3 dir, int maxSteps){
+  dir = normalize(dir);
+  origin += STEP * dir;
+  while(length(origin) < BOUND && (!test(origin, maxSteps))){
+    origin += STEP * dir;
+  }
+  return length(origin) < BOUND;
+}
+
+
+vec3 hsv2rgb(vec3 c)
+{
+    vec4 K = vec4(1.0, 2.0 / 3.0, 1.0 / 3.0, 3.0);
+    vec3 p = abs(fract(c.xxx + K.xyz) * 6.0 - K.www);
+    return c.z * mix(K.xxx, clamp(p - K.xxx, 0.0, 1.0), c.y);
+}
+
+
+
+void main(){
+  vec3 origin = vec3(0.0f, 0.0f, 2.0f);
+  vec3 dir = vec3(uv.x, uv.y, 0.0f) - origin;
+  color = vec3(0.0f);
+  if(find(origin, dir, 20)){
+    color = hsv2rgb(vec3(origin.z * 0.5 + 0.5f, 1.0f, 1.0f));
+  }
+  dir = LIGHT - origin;
+  vec3 prev = origin;
+  if(find(origin, dir, TIMES)){
+    color *= min(length(origin - prev) + 0.5f, 1.0f);
+  }
+
+}
